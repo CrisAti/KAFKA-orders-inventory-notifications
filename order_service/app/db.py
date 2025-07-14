@@ -1,10 +1,17 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Base
+import os
 
-engine = create_engine("sqlite:////app/orders.db", connect_args={"check_same_thread": False},
-    pool_size=20,           # 🔼 aumenta el tamaño del pool
-    max_overflow=30,        # 🔼 permite 30 conexiones extra temporales
-    pool_timeout=30         )
+# Leer la URL desde la variable de entorno
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:admin123@db_order:5432/orders")
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=20,
+    max_overflow=30,
+    pool_timeout=30
+)
+
 SessionLocal = sessionmaker(bind=engine)
 Base.metadata.create_all(bind=engine)

@@ -38,3 +38,14 @@ def get_orders():
         return [{"id": order.id, "item": order.item, "quantity": order.quantity, "status": order.status} for order in orders]
     finally:
         db.close()  # También aquí
+
+@app.get("/order/{order_id}")
+def get_order(order_id: int):
+    db = SessionLocal()
+    try:
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            return {"message": "Order not found"}
+        return {"id": order.id, "item": order.item, "quantity": order.quantity, "status": order.status}
+    finally:
+        db.close()

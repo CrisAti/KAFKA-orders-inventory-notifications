@@ -2,3 +2,4 @@ fastapi
 uvicorn
 sqlalchemy
 confluent-kafka
+psycopg2-binary

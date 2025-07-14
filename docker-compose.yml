@@ -1,6 +1,30 @@
 version: '3.8'
 
 services:
+  db_order:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: orders
+    ports:
+      - "5432:5432"
+    volumes:
+      - orders_data:/var/lib/postgresql/data
+    restart: always
+
+  db_inventory:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: inventory
+    ports:
+      - "5433:5432"
+    volumes:
+      - inventory_data:/var/lib/postgresql/data
+    restart: always
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     environment:
@@ -25,22 +49,34 @@ services:
     build: ./inventory_service
     container_name: inventory-service
     environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    volumes:
-      - inventory_data:/app
+      DATABASE_URL: postgresql://admin:admin123@db_inventory:5432/inventory
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - db_inventory
     ports:
       - "8001:8000"
 
-  order-service:
+  order-service1:
     build: ./order_service
-    container_name: order-service
+    container_name: order-service1
     environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - INVENTORY_SERVICE_URL=http://inventory-service:8000
-    volumes:
-      - order_data:/app
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      INVENTORY_SERVICE_URL: http://inventory-service:8000
+      DATABASE_URL: postgresql://admin:admin123@db_order:5432/orders
     ports:
       - "8002:8000"
+    restart: always
+
+  order-service2:
+    build: ./order_service
+    container_name: order-service2
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      INVENTORY_SERVICE_URL: http://inventory-service:8000
+      DATABASE_URL: postgresql://admin:admin123@db_order:5432/orders
+    ports:
+      - "8004:8000"
+    restart: always
 
   notification-service:
     build: ./notifications_service
@@ -55,6 +91,13 @@ services:
     ports:
       - "8003:8000"
 
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - order-service1
+      - order-service2
 volumes:
   inventory_data:
-  order_data:
+  orders_data:
